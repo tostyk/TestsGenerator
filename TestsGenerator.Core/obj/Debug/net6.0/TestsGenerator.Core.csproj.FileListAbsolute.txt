@@ -1,0 +1,12 @@
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.csproj.AssemblyReference.cache
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.AssemblyInfoInputs.cache
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.AssemblyInfo.cs
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.csproj.CoreCompileInputs.cache
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\bin\Debug\net6.0\TestsGenerator.Core.deps.json
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\bin\Debug\net6.0\TestsGenerator.Core.dll
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\bin\Debug\net6.0\TestsGenerator.Core.pdb
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.dll
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\refint\TestsGenerator.Core.dll
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\TestsGenerator.Core.pdb
+D:\Универ\5_сем\СПП\Лабы\Лаба 4\TestsGenerator\TestsGenerator.Core\obj\Debug\net6.0\ref\TestsGenerator.Core.dll
