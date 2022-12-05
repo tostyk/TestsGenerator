@@ -11,6 +11,7 @@ namespace TestsGenerator.Example
         {
             return 0;
         }
+
         public string StringMethodWithParameters(int number, string s, ExampleClass exampleClass)
         {
             return "";
@@ -26,6 +27,7 @@ namespace TestsGenerator.Example
             return 0;
         }
     }
+
     public class ExampleClass2
     {
         public ExampleClass2(int number) { }
