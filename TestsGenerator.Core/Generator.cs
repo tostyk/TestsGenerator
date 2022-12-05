@@ -7,26 +7,22 @@ namespace TestsGenerator.Core
 {
     public class Generator
     {
-        public Task Generate(string source)
+        public TestClassInfo[] GenerateTests(string source)
         {
-            return new Task(() => GenerateTests(source));
-        }
-        private TestClassInfo[] GenerateTests(string source)
-        { 
-            List<TestClassInfo> testClassesInfo = new List<TestClassInfo>();
+            List<TestClassInfo> testClassesInfo = new();
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
 
-            SyntaxList<UsingDirectiveSyntax> usings = new SyntaxList<UsingDirectiveSyntax>
-            {
-                UsingDirective(ParseName("System")),
-                UsingDirective(ParseName("System.Collections.Generic")),
-                UsingDirective(ParseName("System.Linq")),
-                UsingDirective(ParseName("NUnit.Framework")),
-                UsingDirective(ParseName("System.Text"))
-            };
-            usings.AddRange(root.DescendantNodes().OfType<NamespaceDeclarationSyntax>().Select(n => UsingDirective(n.Name)));
-            usings.AddRange(root.DescendantNodes().OfType<UsingDirectiveSyntax>());
+            var usings = new SyntaxList<UsingDirectiveSyntax>(
+                root.DescendantNodes().OfType<UsingDirectiveSyntax>())
+                .Add(UsingDirective(ParseName("System")))
+                .Add(UsingDirective(ParseName("System.Collections.Generic")))
+                .Add(UsingDirective(ParseName("System.Linq")))
+                .Add(UsingDirective(ParseName("System.Text")))
+                .Add(UsingDirective(ParseName("NUnit.Framework")))
+                .Add(UsingDirective(ParseName("Moq")))
+                .AddRange(root.DescendantNodes().OfType<NamespaceDeclarationSyntax>()
+                    .Select(u => UsingDirective(u.Name)));
 
             var sourceClasses = root.DescendantNodes()
                 .OfType<ClassDeclarationSyntax>()
@@ -36,7 +32,7 @@ namespace TestsGenerator.Core
                 var testClass = CreateTestClass(sourceClass);
                 var testCode = CompilationUnit().WithUsings(usings).AddMembers(testClass);
                 testClassesInfo.Add(
-                    new TestClassInfo(sourceClass.Identifier.Text + "Tests", 
+                    new TestClassInfo(sourceClass.Identifier.Text + "Tests",
                     testCode.NormalizeWhitespace().ToFullString()));
             }
             return testClassesInfo.ToArray();
@@ -47,38 +43,82 @@ namespace TestsGenerator.Core
             var _namespace = NamespaceDeclaration(IdentifierName("Tests"));
 
             var testMethods = CreateTestMethods(sourceClass);
+            testMethods.Add(SetUpMethod(sourceClass));
+            var attributes = SingletonList(AttributeList(SingletonSeparatedList(Attribute(IdentifierName("TestFixture")))));
 
             var testClass = ClassDeclaration(sourceClass.Identifier.Text + "Tests")
                 .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                .AddMembers(testMethods);
+                .WithAttributeLists(attributes)
+                .AddMembers(testMethods.ToArray());
 
             _namespace = _namespace.AddMembers(testClass);
             return _namespace;
         }
 
-        private MemberDeclarationSyntax[] CreateTestMethods(ClassDeclarationSyntax sourceClass)
+        private List<MemberDeclarationSyntax> CreateTestMethods(ClassDeclarationSyntax sourceClass)
         {
-            List<MemberDeclarationSyntax> methodList = new List<MemberDeclarationSyntax>();
+            List<MemberDeclarationSyntax> methodList = new();
+            Dictionary<string, int> overrideMethods = new();
             foreach (var member in sourceClass.Members)
             {
                 if (member.IsKind(SyntaxKind.MethodDeclaration))
                 {
                     var sourceMethod = (MethodDeclarationSyntax)member;
 
-                    var attributes = AttributeList(SingletonSeparatedList(Attribute(IdentifierName("Test"))));
+                    var attributes = SingletonList(AttributeList(SingletonSeparatedList(Attribute(IdentifierName("Test")))));
                     var modifiers = TokenList(Token(SyntaxKind.PublicKeyword));
                     var returnType = PredefinedType(Token(SyntaxKind.VoidKeyword));
 
-                    var methodBody = Block();
+                    BlockSyntax methodBody;
+                    if (!sourceMethod.ReturnType.IsKind(SyntaxKind.VoidKeyword))
+                    {
+                        CreateExpressions(sourceMethod, sourceClass.Identifier.Text);
+                    }
 
-                    var testMethod = MethodDeclaration(returnType, sourceMethod.Identifier.Text + "Test")
-                        .AddBodyStatements(methodBody)
-                        .AddAttributeLists(attributes)
+                    methodBody = Block(ExpressionStatement(ParseExpression("Assert.Fail(\"autogenerated\")")));
+
+                    var name = sourceMethod.Identifier.Text;
+                    if (overrideMethods.ContainsKey(name))
+                    {
+                        overrideMethods[name]++;
+                    }
+                    else
+                    {
+                        overrideMethods.Add(name, 1);
+                    }
+                    var testMethod = MethodDeclaration(returnType, name + (overrideMethods.ContainsKey(name) && overrideMethods[name] > 0 ? overrideMethods[name] : "") + "Test")
+                        .WithBody(methodBody)
+                        .WithAttributeLists(attributes)
                         .WithModifiers(modifiers);
                     methodList.Add(testMethod);
                 }
             }
-            return methodList.ToArray();
+            return methodList;
         }
+        
+        private List<StatementSyntax> CreateExpressions(MethodDeclarationSyntax method, string className)
+        {
+            List<StatementSyntax> methodBody = new List<StatementSyntax>();
+            var callArguments = ArgumentList();
+            foreach (var p in method.ParameterList.Parameters)
+            {
+                callArguments = callArguments
+                    .AddArguments(SeparatedList<ArgumentSyntax>
+                    (new SyntaxNodeOrToken[] 
+                    { 
+                        Argument(IdentifierName(p.Identifier.Text)) 
+                    }).ToArray());
+            }
+            return methodBody;
+        }
+
+        private MemberDeclarationSyntax SetUpMethod(ClassDeclarationSyntax classDeclaration)
+        {
+            MemberDeclarationSyntax setUpMethod = MethodDeclaration(
+                PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier("SetUp"))
+                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
+                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(Attribute(IdentifierName("SetUp"))))));
+            return setUpMethod;
+        }    
     }
 }
