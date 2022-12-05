@@ -183,14 +183,7 @@ namespace TestsGenerator.Core
             else
             {
                 methodBody.Add(LocalDeclarationStatement(
-                    VariableDeclaration(
-                        IdentifierName(
-                            Identifier(
-                                TriviaList(),
-                                SyntaxKind.VarKeyword,
-                                "var",
-                                "var",
-                                TriviaList())))
+                    VariableDeclaration(method.ReturnType)
                     .WithVariables(
                     SingletonSeparatedList(
                         VariableDeclarator(

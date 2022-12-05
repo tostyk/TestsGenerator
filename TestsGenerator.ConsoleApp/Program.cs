@@ -12,8 +12,9 @@
         {
             //GetParameters();
             //TestFilesGenerator generator = new(_maxReadingFiles, _maxProcessingFiles, _maxWritingFiles, _outDirectory);
-            TestFilesGenerator generator = new(3, 3, 3, "dir");
-            _sourceDirectory = "D:\\Универ\\5_сем\\СПП\\Лабы\\Лаба 4\\TestsGenerator\\TestsGenerator.ConsoleApp";
+            _sourceDirectory = "D:\\Универ\\5_сем\\СПП\\Лабы\\Лаба 4\\TestsGenerator\\TestsGenerator.Example";
+            _outDirectory = "D:\\Универ\\5_сем\\СПП\\Лабы\\Лаба 4\\TestsGenerator\\TestsGenerator.Example.Tests";
+            TestFilesGenerator generator = new(3, 3, 3, _outDirectory);
             await generator.Generate(Directory.GetFiles(_sourceDirectory, "*.cs"));
         }
         private static void GetParameters()
