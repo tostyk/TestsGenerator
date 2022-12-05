@@ -7,7 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestsGenerator.Core", "Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestsGenerator.ConsoleApp", "TestsGenerator.ConsoleApp\TestsGenerator.ConsoleApp.csproj", "{827FDF34-0305-42D6-AB70-46C3759D1562}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestsGenerator.Core.Tests", "TestsGenerator.Core.Tests\TestsGenerator.Core.Tests.csproj", "{7B1FD6D3-B889-429C-92B1-D8534CD6E44E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestsGenerator.Core.Tests", "TestsGenerator.Core.Tests\TestsGenerator.Core.Tests.csproj", "{7B1FD6D3-B889-429C-92B1-D8534CD6E44E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{827FDF34-0305-42D6-AB70-46C3759D1562} = {827FDF34-0305-42D6-AB70-46C3759D1562}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
