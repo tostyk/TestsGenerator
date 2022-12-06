@@ -26,12 +26,15 @@ namespace TestsGenerator.Example
         {
             return 0;
         }
+        public static int StaticMethod()
+        {
+            return 0;
+        }
     }
 
-    public class ExampleClass2
+    public static class StaticClass
     {
-        public ExampleClass2(int number) { }
-        public int VoidMethodWithParameters(int number)
+        public static int Method(int number)
         {
             return 0;
         }

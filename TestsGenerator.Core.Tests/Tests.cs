@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 namespace TestsGenerator.Core.Tests
 {
-    public class Tests
+    public class GeneratorTests
     {
         Generator _generator;
         TestClassInfo[] _testClasses;
@@ -31,7 +31,25 @@ namespace TestsGenerator.Core.Tests
         public void FilesNamesTest()
         {
             Assert.That(_testClasses[0].Name, Is.EqualTo("ExampleClassTests"));
-            Assert.That(_testClasses[1].Name, Is.EqualTo("ExampleClass2Tests"));
+            Assert.That(_testClasses[1].Name, Is.EqualTo("StaticClassTests"));
+        }
+
+        [Test]
+        public void UsingsTest()
+        {
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[0].Content);
+            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+
+            Assert.That(root.Members.Count, Is.EqualTo(1));
+            var usings = root.Usings.ToList();
+            Assert.That(usings.Count, Is.EqualTo(7));
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using System;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using System.Collections.Generic;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using System.Linq;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using System.Text;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using NUnit.Framework;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using Moq;"), Is.Not.Null);
+            Assert.That(usings.Find(u => u.ToFullString().Trim() == "using TestsGenerator.Example;"), Is.Not.Null);
         }
 
         [Test]
@@ -73,7 +91,7 @@ namespace TestsGenerator.Core.Tests
             Assert.That(cl, Is.Not.Null);
             Assert.That(cl2, Is.Not.Null);
             Assert.That(cl.Identifier.Text, Is.EqualTo("ExampleClassTests"));
-            Assert.That(cl2.Identifier.Text, Is.EqualTo("ExampleClass2Tests"));
+            Assert.That(cl2.Identifier.Text, Is.EqualTo("StaticClassTests"));
         }
 
         [Test]
@@ -101,15 +119,12 @@ namespace TestsGenerator.Core.Tests
         }
 
         [Test]
-        public void ClassesFieldsTest()
+        public void ClassFieldsTest()
         {
             SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[0].Content);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
-            var ns = root.Members[0] as NamespaceDeclarationSyntax;
-            var cl = ns.Members[0] as ClassDeclarationSyntax;
+            var cl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Single();
 
-            Assert.That(cl.Members.Count, Is.EqualTo(8));
-            Assert.That(cl.Members[0].IsKind(SyntaxKind.FieldDeclaration), Is.EqualTo(true));
             var fields = cl.DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
             Assert.That(fields.Count(), Is.EqualTo(2));
             Assert.That(fields[0].Declaration.Variables[0].Identifier.Text, Is.EqualTo("_exampleClass"));
@@ -121,14 +136,37 @@ namespace TestsGenerator.Core.Tests
         }
 
         [Test]
+        public void StaticClassFieldsTest()
+        {
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[1].Content);
+            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+            var staticClass = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Single();
+
+            Assert.That(staticClass.DescendantNodes().OfType<FieldDeclarationSyntax>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void SetUpMethodTest()
         {
             SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[0].Content);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
-            var ns = root.Members[0] as NamespaceDeclarationSyntax;
-            var cl = ns.Members[0] as ClassDeclarationSyntax;
+            var cl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Single();
+
             var setUpMethod = cl.DescendantNodes().OfType<MethodDeclarationSyntax>().Where(m => m.Identifier.Text == "SetUp").Single();
             Assert.That(setUpMethod.AttributeLists[0].Attributes[0].ToFullString(), Is.EqualTo("SetUp"));
+            Assert.That(setUpMethod.Body.Statements.Count(), Is.EqualTo(3));
+        }
+
+        [Test]
+        public void SetUpMethodForStaticClassTest()
+        {
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[1].Content);
+            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+            var staticClass = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Single();
+
+            var setUpMethod = staticClass.DescendantNodes().OfType<MethodDeclarationSyntax>().Where(m => m.Identifier.Text == "SetUp").Single();
+            Assert.That(setUpMethod.AttributeLists[0].Attributes[0].ToFullString(), Is.EqualTo("SetUp"));
+            Assert.That(setUpMethod.Body.Statements.Count(), Is.EqualTo(0));
         }
 
         [Test]
@@ -143,6 +181,23 @@ namespace TestsGenerator.Core.Tests
             {
                 Assert.That(method.Body.Statements.Where(s => s.ToFullString() == "Assert.Fail(\"autogenerated\")"), Is.Not.Null);
             }
+        }
+
+        [Test]
+        public void StaticMethodsTest()
+        {
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(_testClasses[0].Content);
+            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+            var cl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Single();
+            var staticMethodTest = cl
+                .DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .ToList()
+                .Find(t => t.Identifier.Text == "StaticMethodTest");
+            var staticMethod = staticMethodTest.Body.Statements
+                .ToList()
+                .Where(e => e.ToFullString() == "int actual = ExampleClass.StaticMethod();");
+            Assert.That(staticMethod, Is.Not.Null);
         }
     }
 }

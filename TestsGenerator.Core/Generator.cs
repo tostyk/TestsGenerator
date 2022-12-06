@@ -45,7 +45,7 @@ namespace TestsGenerator.Core
             var testMethods = CreateTestMethods(sourceClass);
             var attributes = SingletonList(AttributeList(SingletonSeparatedList(Attribute(IdentifierName("TestFixture")))));
 
-            var fields = CreateTestClassFields(sourceClass);
+            var fields = CreateTestFields(sourceClass);
             var testClass = ClassDeclaration(sourceClass.Identifier.Text + "Tests")
                 .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
                 .WithAttributeLists(attributes)
@@ -65,7 +65,7 @@ namespace TestsGenerator.Core
             Dictionary<string, int> overrideMethods = new();
             foreach (var member in sourceClass.Members)
             {
-                if (member.IsKind(SyntaxKind.MethodDeclaration))
+                if (member.IsKind(SyntaxKind.MethodDeclaration) && member.Modifiers.Any(SyntaxKind.PublicKeyword))
                 {
                     var sourceMethod = (MethodDeclarationSyntax)member;
 
@@ -94,13 +94,14 @@ namespace TestsGenerator.Core
             return methodList;
         }
 
-        private List<MemberDeclarationSyntax> CreateTestClassFields(ClassDeclarationSyntax classDeclaration)
+        private List<MemberDeclarationSyntax> CreateTestFields(ClassDeclarationSyntax classDeclaration)
         {
             var className = classDeclaration.Identifier.Text;
             var camelCaseClasName = $"_{className.ToLower()[0]}{className.Remove(0, 1)}";
-            var fields = new List<MemberDeclarationSyntax>
+            var fields = new List<MemberDeclarationSyntax>();
+            if (!classDeclaration.Modifiers.Any(SyntaxKind.StaticKeyword))
             {
-                FieldDeclaration(
+                fields.Add(FieldDeclaration(
                     VariableDeclaration(
                         IdentifierName(className))
                     .WithVariables(
@@ -109,39 +110,39 @@ namespace TestsGenerator.Core
                                 Identifier(camelCaseClasName)))))
                 .WithModifiers(
                     TokenList(
-                        Token(SyntaxKind.PrivateKeyword)))
-            };
-            var constructor = classDeclaration
-                .DescendantNodes()
-                .OfType<ConstructorDeclarationSyntax>()
-                .ToList()
-                .FirstOrDefault();
+                        Token(SyntaxKind.PrivateKeyword))));
+                var constructor = classDeclaration
+                    .DescendantNodes()
+                    .OfType<ConstructorDeclarationSyntax>()
+                    .ToList()
+                    .FirstOrDefault();
 
-            if (constructor != null)
-                foreach (var parameter in constructor.ParameterList.Parameters)
-                {
-                    if (parameter.Type.ToFullString().StartsWith('I'))
+                if (constructor != null)
+                    foreach (var parameter in constructor.ParameterList.Parameters)
                     {
-                        var interfaceName = parameter.Type.ToFullString();
-                        var mockVar = $"_{interfaceName.ToLower()[1]}{interfaceName.Remove(0, 2)}";
-                        fields.Add(
-                            FieldDeclaration(
-                                VariableDeclaration(
-                                    GenericName(
-                                        Identifier("Mock"))
-                                    .WithTypeArgumentList(
-                                        TypeArgumentList(
-                                            SingletonSeparatedList<TypeSyntax>(
-                                                IdentifierName(interfaceName)))))
-                                .WithVariables(
-                                    SingletonSeparatedList(
-                                        VariableDeclarator(
-                                            Identifier(mockVar)))))
-                            .WithModifiers(
-                                TokenList(
-                                    Token(SyntaxKind.PrivateKeyword))));
+                        if (parameter.Type.ToFullString().StartsWith('I'))
+                        {
+                            var interfaceName = parameter.Type.ToFullString();
+                            var mockVar = $"_{interfaceName.ToLower()[1]}{interfaceName.Remove(0, 2)}";
+                            fields.Add(
+                                FieldDeclaration(
+                                    VariableDeclaration(
+                                        GenericName(
+                                            Identifier("Mock"))
+                                        .WithTypeArgumentList(
+                                            TypeArgumentList(
+                                                SingletonSeparatedList<TypeSyntax>(
+                                                    IdentifierName(interfaceName)))))
+                                    .WithVariables(
+                                        SingletonSeparatedList(
+                                            VariableDeclarator(
+                                                Identifier(mockVar)))))
+                                .WithModifiers(
+                                    TokenList(
+                                        Token(SyntaxKind.PrivateKeyword))));
+                        }
                     }
-                }
+            }
             return fields;
         }
 
@@ -303,15 +304,16 @@ namespace TestsGenerator.Core
                                                 Token(SyntaxKind.DefaultKeyword))))))));
                     }
                 }
-            setup.Add(
-                ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(camelCaseClassName),
-                        ObjectCreationExpression(
-                            IdentifierName(className))
-                        .WithArgumentList(
-                            ArgumentList(args)))));
+            if (!classDeclaration.Modifiers.Any(SyntaxKind.StaticKeyword))
+                setup.Add(
+                    ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(camelCaseClassName),
+                            ObjectCreationExpression(
+                                IdentifierName(className))
+                            .WithArgumentList(
+                                ArgumentList(args)))));
 
             MemberDeclarationSyntax setUpMethod = MethodDeclaration(
                 PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier("SetUp"))
